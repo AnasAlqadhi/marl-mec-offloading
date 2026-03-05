@@ -55,6 +55,7 @@ marl-mec-offloading/
 ├── notebooks/
 │   └── final_run_50k.ipynb           # Original Google Colab experiment notebook
 │
+├── assets/                           # Result plots
 ├── output/                           # Auto-generated plots and CSV logs
 ├── requirements.txt
 ├── .gitignore
@@ -65,8 +66,6 @@ marl-mec-offloading/
 
 ## Installation on Windows
 
-All commands below are written for **Windows Command Prompt** (`cmd`) or **Windows PowerShell**. No Unix-specific commands are used.
-
 ### Prerequisites
 
 | Software | Minimum Version | Download Link |
@@ -76,16 +75,12 @@ All commands below are written for **Windows Command Prompt** (`cmd`) or **Windo
 
 > **Important:** During Python installation, tick the checkbox **"Add Python to PATH"**.
 
----
-
 ### Step 1 — Clone the Repository
 
 ```cmd
-git clone https://github.com/anas-alqadhi/marl-mec-offloading.git
+git clone https://github.com/AnasAlqadhi/marl-mec-offloading.git
 cd marl-mec-offloading
 ```
-
----
 
 ### Step 2 — Create a Virtual Environment
 
@@ -106,18 +101,13 @@ python -m venv venv
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
 
-Once activated, your prompt will show `(venv)` at the beginning.
-
----
-
 ### Step 3 — Install Dependencies
 
 ```cmd
 pip install -r requirements.txt
 ```
 
-Verify the installation:
-
+Verify:
 ```cmd
 python -c "import torch, numpy, pandas, matplotlib; print('All packages installed successfully')"
 ```
@@ -153,8 +143,6 @@ python scripts\run_ppo.py --run_id my_run --latency 0.3 --quality 0.95 --channel
 | `--lr`       | float | `1e-4`                   | Learning rate for the Adam optimiser               |
 | `--batch`    | int   | `256`                    | Rollout batch size (PPO) / replay batch (MADDPG)   |
 
----
-
 ### Reproduce All Five Experiments
 
 **Run 1 — Baseline:**
@@ -187,8 +175,6 @@ python scripts\run_ppo.py    --run_id run5_lat025_q092_chan2 --latency 0.25 --qu
 python scripts\run_maddpg.py --run_id run5_lat025_q092_chan2 --latency 0.25 --quality 0.92 --channels 2
 ```
 
----
-
 ### Generate Comparison Plots
 
 ```cmd
@@ -199,24 +185,6 @@ Single metric:
 ```cmd
 python scripts\plot_all_results.py --metric Reward
 python scripts\plot_all_results.py --metric Energy
-```
-
-Open a plot directly from the terminal:
-```cmd
-start output\run1_lat05_q09_chan2\reward_curve.png
-```
-
----
-
-### Output Files
-
-```
-output\
-└── run1_lat05_q09_chan2\
-    ├── ppo_rewards.csv        ← Episode, Reward, Energy, Latency, Phi (PPO)
-    ├── ddpg_rewards.csv       ← Same columns for MADDPG
-    ├── reward_curve.png       ← 4-panel metric plot (PPO)
-    └── ddpg_curve.png         ← 4-panel metric plot (MADDPG)
 ```
 
 ---
@@ -325,9 +293,43 @@ yᵢ = rᵢ + γ · Q̄ᵢ( o'_all , ā'₁, …, ā'_N )
 
 ## Results and Analysis
 
-All five runs converge to **−4.0 ± 0.2** reward per episode. The uniformity across configurations is due to the current reward signal penalising only action magnitude, without incorporating constraint-specific penalties. PPO reaches its plateau within approximately 5,000 episodes; MADDPG exhibits a slower but more sustained improvement supported by its replay buffer.
+### PPO vs. MADDPG — Reward Comparison (Run 5)
 
-Energy stabilises at **0.31 – 0.33 J**, latency converges to **≈ 0.55 s**, and quality (Φ) settles in the **0.865 – 0.875** band — consistent across all runs. Divergence between configurations is expected once the full utility function is activated.
+![PPO vs MADDPG Reward](assets/algo_compare_run5.png)
+
+PPO converges rapidly within the first ~2,000 episodes and then plateaus. MADDPG starts with high variance during replay buffer warm-up but stabilises at a comparable reward level. Both algorithms settle around **−4.0** under the current energy-proxy reward.
+
+---
+
+### Reward — All 5 Runs
+
+![Reward Comparison All Runs](assets/compare_reward_50k.png)
+
+All five configurations converge to the same narrow reward band of **−4.0 ± 0.2**, confirming that the current reward signal is driven primarily by action magnitude rather than the constraint parameters (τ, ε, channels). Divergence is expected once the full utility function is activated.
+
+---
+
+### Energy Consumption — All 5 Runs
+
+![Energy Comparison All Runs](assets/compare_energy_50k.png)
+
+Energy stabilises at **0.31 – 0.33 J** across all agents and all runs. Both algorithms converge to the same low-power offloading policy within the first few hundred episodes.
+
+---
+
+### Latency — All 5 Runs
+
+![Latency Comparison All Runs](assets/compare_latency_50k.png)
+
+Latency converges uniformly to **≈ 0.55 s** across all configurations. No differentiation between runs is observable at this stage because channel contention is not yet modelled in the environment.
+
+---
+
+### Quality Score (Φ) — All 5 Runs
+
+![Quality Comparison All Runs](assets/compare_phi_50k.png)
+
+Quality stabilises in the **0.865 – 0.875** band for all runs. The narrow spread confirms that quality-constraint enforcement is not yet active in the current reward formulation.
 
 ---
 
